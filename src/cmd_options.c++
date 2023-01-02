@@ -102,6 +102,13 @@ cmd_options &cmd_options::add_unnamed(std::string &val, char const *help_name, c
 bool cmd_options::parse_cmd(int argc, char **argv) const {
   size_t current_unnamed = 0;
   bool parse_options = true; // set to false after --
+  // Show help if no argument at all
+  if(argc == 1) {
+    cerr << "ERROR: Missing subtitle base name.\n";
+    help(argv[0]);
+    exit = true;
+    return false;
+  }
   for(int i = 1; i < argc; ++i) {
     if(parse_options and argv[i][0] == '-') {
       unsigned offset = 1;

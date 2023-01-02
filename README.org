@@ -12,6 +12,25 @@ does not use any preprocessing.  But I'm currently looking into adding filters
 and scaling options to improve the OCR. You can correct mistakes in the =.srt=
 files with a text editor or a special subtitle editor.
 
+** Additions
+
+*** Tesseract OEM option
+
+=–-tesseract-oem n=
+
+option to vobsub2srt for use with Tesseract 4. Defaults to OEM 1 .
+
+#+BEGIN_EXAMPLE
+  vobsub2srt –tesseract-data /home/user/tessdata -–tesseract-oem 1 Vobfile_basename
+#+END_EXAMPLE
+
+*** Invert images on the fly
+
+=--invert-image=
+
+Tesseract 4 has been trained for black text on white background, use =--invert-image=
+option pass (trivially) inverted images to Tesseract (PGM 255-n per pixel).
+
 * Building
 You need tesseract. You also need cmake and a gcc to build it.
 With Ubuntu 12.10 you can install the dependencies with

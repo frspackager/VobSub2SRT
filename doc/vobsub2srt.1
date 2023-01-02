@@ -14,6 +14,9 @@ File name of the subtitles \fBWITHOUT\fR the .idx or .sub extension. The .srt su
 \fB\-\-dump\-images\fR
 Dump the subtitles as images (format \fIFILENAME\fR-\fINUMBER\fR.pgm in PGM format).
 .TP
+\fB\-\-invert\-images\fR
+Invert images to enhance Tesseract 4 OCR capability.
+.TP
 \fB\-\-verbose\fR
 Print more information about the file (e.g. subtitle languages)
 .TP
@@ -34,6 +37,9 @@ Set the language to be used by tesseract.  This is auto detected and normally do
 .TP
 \fB\-\-tesseract-data\fR \fIpath\fR
 Set path to tesseract-data.
+.TP
+\fB\-\-tesseract-oem\fR \fInumber\fR
+Use specific Tesseract OEM engine.
 .TP
 \fB\-\-blacklist\fR \fIblacklist\fR
 Blacklist characters for OCR (e.g. |\\/`_~<>)

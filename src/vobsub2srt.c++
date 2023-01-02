@@ -108,12 +108,14 @@ struct ImageInverter {
 
 int main(int argc, char **argv) {
   bool dump_images = false;
+  bool invert_images = false;
   bool verb = false;
   bool list_languages = false;
   std::string ifo_file;
   std::string subname;
   std::string lang;
   std::string tess_lang_user;
+  int tesseract_oem = 1;
   std::string blacklist;
   std::string tesseract_data_path = TESSERACT_DATA_PATH;
   int index = -1;
@@ -128,6 +130,7 @@ int main(int argc, char **argv) {
     cmd_options opts;
     opts.
       add_option("dump-images", dump_images, "dump subtitles as image files (<subname>-<number>.pgm).").
+      add_option("invert-images", invert_images, "invert images to help Tesseract 4 (Default: not)").
       add_option("verbose", verb, "extra verbosity").
       add_option("ifo", ifo_file, "name of the ifo file. default: tries to open <subname>.ifo. ifo file is optional!").
       add_option("lang", lang, "language to select", 'l').
@@ -135,6 +138,7 @@ int main(int argc, char **argv) {
       add_option("index", index, "subtitle index", 'i').
       add_option("tesseract-lang", tess_lang_user, "set tesseract language (Default: auto detect)").
       add_option("tesseract-data", tesseract_data_path, "path to tesseract data (Default: " TESSERACT_DATA_PATH ")").
+      add_option("tesseract-oem", tesseract_oem, "Tesseract Engine mode to use (Default: 1)").
       add_option("blacklist", blacklist, "Character blacklist to improve the OCR (e.g. \"|\\/`_~<>\")").
       add_option("y-threshold", y_threshold, "Y (luminance) threshold below which colors treated as black (Default: 0)").
       add_option("min-width", min_width, "Minimum width in pixels to consider a subpicture for OCR (Default: 9)").
@@ -167,7 +171,7 @@ int main(int argc, char **argv) {
     cout << "Languages:\n";
     for(size_t i = 0; i < vobsub_get_indexes_count(vob); ++i) {
       char const *const id = vobsub_get_id(vob, i);
-      cout << i << ": " << (id ? id : "(no id)") << '\n';
+      cout << i << ": " << (id ? iso639_1_to_639_3(id) : "(no id)") << '\n';
     }
     return 0;
   }
@@ -216,12 +220,20 @@ int main(int argc, char **argv) {
 
   // Init Tesseract
   char const *tess_path = NULL;
+  OcrEngineMode tess_oem = OEM_TESSERACT_ONLY;
   if (tesseract_data_path != TESSERACT_DEFAULT_PATH)
     tess_path = tesseract_data_path.c_str();
+  if (tesseract_oem != 1) {
+    switch(tesseract_oem) {
+      case 0 : tess_oem = OEM_TESSERACT_ONLY; break;
+      case 2 : tess_oem = OEM_TESSERACT_LSTM_COMBINED; break;
+      case 3 : tess_oem = OEM_DEFAULT; break;
+    }
+  } 
 
 #ifdef CONFIG_TESSERACT_NAMESPACE
   TessBaseAPI tess_base_api;
-  if(tess_base_api.Init(tess_path, tess_lang) == -1) {
+  if(tess_base_api.Init(tess_path, tess_lang, tess_oem) == -1) {
     cerr << "Failed to initialize tesseract (OCR).\n";
     return 1;
   }
@@ -229,7 +241,7 @@ int main(int argc, char **argv) {
     tess_base_api.SetVariable("tessedit_char_blacklist", blacklist.c_str());
   }
 #else
-  TessBaseAPI::SimpleInit(tess_path, tess_lang, false); // TODO params
+  TessBaseAPI::SimpleInit(tess_path, tess_lang, tess_oem, false); // TODO params
   if(not blacklist.empty()) {
     TessBaseAPI::SetVariable("tessedit_char_blacklist", blacklist.c_str());
   }
@@ -282,14 +294,12 @@ int main(int argc, char **argv) {
       // While tesseract version 3.05 (and older) handle inverted image (dark
       // background and light text) without problem, for 4.x version use dark
       // text on light background.
-      // https://github.com/tesseract-ocr/tesseract/wiki/ImproveQuality#inverting-images
+      // https://github.com/tesseract-ocr/tessdoc/blob/main/ImproveQuality.md#inverting-images
 
-      #ifdef INVERT_IMAGES
-
-      ImageInverter inverter(image, width*height);
-      image = inverter.inverted_image;
-
-      #endif // INVERT_IMAGES
+      if(invert_images){
+        ImageInverter inverter(image, width*height);
+        image = inverter.inverted_image;
+      }
 
       if(dump_images) {
         dump_pgm(subname, sub_counter, width, height, stride, image, image_size);
